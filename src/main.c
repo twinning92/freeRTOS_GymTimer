@@ -3,8 +3,6 @@
 #include <freertos/queue.h>
 #include <esp_log.h>
 
-#include <driver/uart.h>
-
 #include "../inc/manager.h"
 
 void app_main(void){

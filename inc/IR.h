@@ -22,7 +22,12 @@ static const uint16_t ZERO  = 0xe619;
 static const uint16_t STAR  = 0xe916;
 static const uint16_t HASH  = 0xf20d;
 static const uint16_t OKAY  = 0xe31c;
+static const uint16_t REPEAT = 0x0000;
 
+typedef struct ir_command_t{
+    uint16_t next_command;
+    bool new_data;
+}ir_command_t;
 
 void ir_task(void* param);
 

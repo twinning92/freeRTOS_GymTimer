@@ -5,6 +5,8 @@
 #include <string.h>
 #include "../inc/manager.h"
 
+#define TAG "IR Manager"
+
 static rmt_symbol_word_t raw_symbols[64];
 static rmt_rx_done_event_data_t rx_data;
 
@@ -20,7 +22,7 @@ static bool rx_received_cb(rmt_channel_handle_t rx_chan, const rmt_rx_done_event
 
 static void ir_setup(rmt_channel_handle_t* rx_channel, QueueHandle_t* rx_queue, rmt_receive_config_t *receive_config) 
 {
-    ESP_LOGI("IR", "create RMT RX channel");
+    ESP_LOGD(TAG, "create RMT RX channel");
     rmt_rx_channel_config_t rx_channel_config = {
         .clk_src = RMT_CLK_SRC_DEFAULT,
         .resolution_hz = 1 * 1000 * 1000,
@@ -30,7 +32,7 @@ static void ir_setup(rmt_channel_handle_t* rx_channel, QueueHandle_t* rx_queue, 
     };
 
     ESP_ERROR_CHECK(rmt_new_rx_channel(&rx_channel_config, rx_channel));
-    ESP_LOGI("IR", "register RX done callback");
+    ESP_LOGD(TAG, "register RX done callback");
 
     *rx_queue = xQueueCreate(3, sizeof(rmt_rx_done_event_data_t));
 
@@ -39,10 +41,10 @@ static void ir_setup(rmt_channel_handle_t* rx_channel, QueueHandle_t* rx_queue, 
     };
     ESP_ERROR_CHECK(rmt_rx_register_event_callbacks(*rx_channel, &cbs, rx_queue));
 
-    ESP_LOGI("IR", "Enabling rx channel");
+    ESP_LOGD(TAG, "Enabling rx channel");
     ESP_ERROR_CHECK(rmt_enable(*rx_channel));
 
-    ESP_LOGI("IR", "Starting RMT reception");
+    ESP_LOGD(TAG, "Starting RMT reception");
     ESP_ERROR_CHECK(rmt_receive(*rx_channel, raw_symbols, sizeof(raw_symbols), receive_config));
 
 }
@@ -65,7 +67,7 @@ void ir_task(void *param)
 
 
     ir_setup(&rx_channel_handle, &rx_queue, &receive_config);
-    ESP_LOGI("IR", "IR Task entering loop");
+    ESP_LOGD(TAG, "IR Task entering loop");
 
     while(1){
         if(xQueueReceive(rx_queue, &rx_data, portMAX_DELAY)) {          
