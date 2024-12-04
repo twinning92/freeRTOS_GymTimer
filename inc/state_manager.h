@@ -14,6 +14,7 @@
 
 void state_manager_task(void* param);
 
-void ir_receive_cb(void* event_data, void* user_data);
-void toggle_cb();
+void state_ir_receive_cb(void* event_data, void* user_data);
+void sm_program_selected_cb(void* event_data, void* user_data);
+
 #endif

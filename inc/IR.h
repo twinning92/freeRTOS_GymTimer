@@ -25,8 +25,8 @@ static const uint16_t OKAY  = 0xe31c;
 static const uint16_t REPEAT = 0x0000;
 
 typedef struct ir_command_t{
-    uint16_t next_command;
-    bool new_data;
+    uint16_t value;
+    bool queued;
 }ir_command_t;
 
 void ir_task(void* param);

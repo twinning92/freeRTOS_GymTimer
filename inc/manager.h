@@ -13,12 +13,15 @@ typedef enum {
     IR_CMD_RECEIVED,
     GLOBAL_STATE_CHANGE,
     DISPLAY_UPDATE,
+    PROGRAM_SELECTED,
     NUM_EVENTS,
 } event_type_t;
 
+// struct to add to the global queue. Only free the pointer when need_free is set.
 typedef struct {
     event_type_t type;
     void* data;
+    bool need_free;
 } system_event_t;
 
 typedef struct cb_entry_t {

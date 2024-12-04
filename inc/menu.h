@@ -4,8 +4,9 @@
 #include <freertos/FreeRTOS.h>
 #include "program.h"
 
+
 void menu_task(void* param);
-void ir_received_cb(void *event_data, void* user_data);
-void toggle_cb();
+void menu_ir_receive_cb(void *event_data, void* user_data);
+void menu_toggle_cb();
 
 #endif

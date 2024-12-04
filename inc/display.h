@@ -3,10 +3,8 @@
 
 #include <freertos/FreeRTOS.h>
 
-typedef struct display_t {
-    char *display_string[6];
-    uint16_t colour;
-} display_t;
+void display_task(void* param);
+void display_update_cb(void* event_data, void* user_data);
 
 
 #endif

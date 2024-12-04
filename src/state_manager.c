@@ -15,7 +15,7 @@
 
 volatile global_state_t global_state = IDLE;
 static volatile ir_command_t sm_command;
-static volatile bool enabled = true;
+static volatile bool cb_enabled = true;
 
 static void change_state(global_state_t new_state)
 {
@@ -31,47 +31,61 @@ static void change_state(global_state_t new_state)
 void state_manager_task(void *param)
 {
     cb_entry_t* ir_cb_handle;
-    register_cb(IR_CMD_RECEIVED, ir_receive_cb, NULL, &ir_cb_handle);
+    cb_entry_t* program_selected_cb_handle;
+    register_cb(IR_CMD_RECEIVED, state_ir_receive_cb, NULL, &ir_cb_handle);
+    register_cb(PROGRAM_SELECTED, sm_program_selected_cb, NULL, &program_selected_cb_handle);
 
     while(1)
     {
-        if(sm_command.new_data)
+        if(sm_command.queued)
         {
-            ESP_LOGD(TAG, "Queue received");
             switch(global_state)
             {
                 case IDLE:
                 // Any user interaction from the remote, change to menu state. Could expand for quick jumps e.g. Press '2' to go to program X
+                    menu_toggle_cb();
                     change_state(MENU);
                 break;
                 case MENU:
+                    // 'STAR' should always return to IDLE
+                    if(sm_command.value == STAR){
+                        menu_toggle_cb();
+                        change_state(IDLE);
+                    }
+                break;
                 case RUNNING_PROGRAM:
-                // 'STAR' should always return to IDLE
-                if(sm_command.next_command == STAR)
-                    change_state(IDLE);
+                    // 'STAR' should always return to IDLE
+                    if(sm_command.value == STAR){
+                        menu_toggle_cb();
+                        change_state(IDLE);
+                    }
                 break;
                 default:
                 
                 break;
             }
-            sm_command.new_data = false;
+            sm_command.queued = false;
         }
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
 
-void ir_receive_cb(void *event_data, void* user_data)
+void state_ir_receive_cb(void *event_data, void* user_data)
 {
-    if(enabled && !sm_command.new_data)
+    if(cb_enabled && !sm_command.queued)
     {
-        sm_command.next_command = *(uint16_t*) event_data;
-        sm_command.new_data = true;
+        sm_command.value = *(uint16_t*) event_data;
+        sm_command.queued = true;
     }
 }
 
-void toggle_cb()
+void sm_program_selected_cb(void* event_data, void* user_data)
 {
-    enabled = !enabled;
-}
+    if(event_data != NULL)
+    {
+        menu_toggle_cb();
+        change_state(RUNNING_PROGRAM);
+    }
 
+}
