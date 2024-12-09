@@ -1,0 +1,15 @@
+## Overview
+At it's core, the gym timer v3 runs a light weight "plug-in" system. Peripherals will raise and insert events into an event queue, which the device_manager task will pop and distribute to the currently active program. When not running a timer 'program' the clock will display the time of day or a pre-programmed string. The user can interact with an IR remote to navigate through the menu to choose a specific 'program' (think rounds, tabata, QnD, stopwatch etc). The time of day is derived using a GPS module to achieve a 'no configuration required' quality of life. There are also plans to add temperature sensing and potentially an RTC (but that seems unnecessary given the speed the GPS module can lock on).
+
+## Design Decisions
+Initially I had a callback registration mechanism, where interested parties could signal to the controller they were interested in receiving calls based on peripheral events, however it became apparent that would become unweildly, as distributing events like IR command input required too much finesse: do we unregister our callbacks, and reregister as required? Enable/disable callback execution based on the timer's state?
+
+It also functioned as a hierarchical state machine, where the highest state could be IDLE, MENU, RUNNING_PROGRAM with the RUNNING_PROGRAM state containing lower level CONFIGURING, PRIMED, PRELIM_COUNTDOWN, RUNNING, PAUSED, FINISHED. Maintaining these two state machines didn't really provide any benefit ie running in the IDLE state, the device_manager would consume the IR events, merely to transition to the MENU state and so on. The callback registration is done at task creation time, meaning that anything interested in an event gets called, regardless of whether the task is 'active' or 'dormant.'
+
+Ultimately, this didn't feel like the best approach, so I threw it out and refactored what I consider to be smarter approach: events are still put onto the queue, however, the device_manager that is consuming them will have the active program's callback struct that it can use. As various programs are selected and states achieved the callback structure can be swapped in and out for the device_manager to make calls to. This significantly reduces the complexity of callback activation, state management, and peripheral io.
+
+## Event propagation
+The device_manager will allow the active program to register a suite of callbacks to it. When an event is popped off the queue, then the manager will call the registered programs callback functions pertatining to that event type e.g. IR input, 1 second elapsed etc. Having a singular active structure will mean that calls to update the display may need to be made via the active program. This could look like:
+ - Direct display update function calls from the active program logic. 
+
+ An alternative would be for the device_manager to update the display directly. Active programs could enqueue a DISPLAY_UPDATE event, which could then be handled by the manager and display together. 

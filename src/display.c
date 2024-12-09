@@ -3,14 +3,13 @@
 #include <freertos/queue.h>
 #include <esp_log.h>
 
-#include <../inc/manager.h>
+#include "../inc/device_manager.h"
 
 #define TAG "Display Manager"
 
 void display_task(void *param)
 {
-    cb_entry_t *display_update_cb_handle;
-    register_cb(DISPLAY_UPDATE, display_update_cb, NULL, &display_update_cb_handle);
+    QueueHandle_t central_event_queue = (QueueHandle_t) param;
 
     while(1)
     {

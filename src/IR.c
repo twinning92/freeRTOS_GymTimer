@@ -1,9 +1,10 @@
-#include "../inc/IR.h"
-#include "../lib/ir_nec.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <string.h>
-#include "../inc/manager.h"
+
+#include "../inc/IR.h"
+#include "../lib/ir_nec.h"
+#include "../inc/device_manager.h"
 
 #define TAG "IR Manager"
 
@@ -58,13 +59,13 @@ void ir_task(void *param)
 
     rmt_channel_handle_t rx_channel_handle;
     QueueHandle_t rx_queue;
+    QueueHandle_t central_event_queue = (QueueHandle_t) param;
     uint16_t address, command = 0;
 
     rmt_receive_config_t receive_config = {
         .signal_range_min_ns = 1250,
         .signal_range_max_ns = 12000000,
     };
-
 
     ir_setup(&rx_channel_handle, &rx_queue, &receive_config);
     ESP_LOGD(TAG, "IR Task entering loop");
@@ -76,8 +77,9 @@ void ir_task(void *param)
                 ir_event.data = pvPortMalloc(sizeof(uint16_t));
                 if(ir_event.data){
                     *(uint16_t *) ir_event.data = command;
+                    ESP_LOGI(TAG, "command: 0x%04x", command);
                 }
-            xQueueSend(global_event_queue, &ir_event, 0);
+            xQueueSend(central_event_queue, &ir_event, 0);
             }
         }
     }

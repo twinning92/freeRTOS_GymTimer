@@ -1,6 +1,6 @@
 #include "../inc/program.h"
 #include "../inc/IR.h"
-#include "../inc/manager.h"
+#include "../inc/device_manager.h"
 
 #include <freertos/FreeRTOS.h>
 #include <esp_log.h>
@@ -16,16 +16,9 @@ static void init_programs();
 
 void program_runner_task(void *param)
 {
-    cb_entry_t *tick_cb_handle;
-    cb_entry_t *ir_cb_handle;
-    cb_entry_t *prog_selected_cb_handle;
+    QueueHandle_t central_event_queue = (QueueHandle_t) param;
 
     init_programs();
-
-    register_cb(TIMER_TICK_1S, timer_1s_tick_cb, NULL, &tick_cb_handle);
-    register_cb(IR_CMD_RECEIVED, prog_ir_receive_cb, NULL, &ir_cb_handle);
-    register_cb(PROGRAM_SELECTED, program_selected_cb, NULL, &prog_selected_cb_handle);
-    
 
     while(1){
         vTaskDelay(pdMS_TO_TICKS(10));        

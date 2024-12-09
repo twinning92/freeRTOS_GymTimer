@@ -2,80 +2,138 @@
 #include <esp_log.h>
 
 #include "../inc/menu.h"
-#include "../inc/manager.h"
+#include "../inc/device_manager.h"
 #include "../inc/IR.h"
 #include "../inc/program.h"
 
 #define TAG "Menu"
 
-static volatile ir_command_t command;
-static volatile bool cb_enabled = false;
+cbs_t menu_cbs = {
+	.ir_cb = menu_ir_receive_cb,
+	.tick1s_cb = menu_1s_receive_cb,
+	.ticks10ms_cb = NULL,
+};
+
+volatile clock_state_t clock_state = IDLE;
 
 void menu_task(void *param)
 {
-	cb_entry_t *ir_received_cb_handle;
-	uint8_t program_index = 0;
-	program_config_t display_index = programs_db[program_index];
-	bool update_display = false;
-
-	register_cb(IR_CMD_RECEIVED, menu_ir_receive_cb, NULL, &ir_received_cb_handle);
-	system_event_t display_update = 
+	QueueHandle_t central_event_queue = (QueueHandle_t) param;
+	bool cbs_inserted = false;
+	while(1)
 	{
-		.type = DISPLAY_UPDATE,
-		.need_free = false,
-	};
-
-	system_event_t program_select = 
-	{
-		.type = PROGRAM_SELECTED,
-		.need_free = false,
-	};
-	while(1){
-		if(command.queued) 
+		switch(clock_state)
 		{
-			switch(command.value)
+			case IDLE:
+				if(!cbs_inserted)
+				{
+					insert_cbs(&menu_cbs);
+					cbs_inserted = true;
+				}
+			break;
+			case RUNNING:
+				cbs_inserted = false;
+
+		}
+		vTaskDelay(pdMS_TO_TICKS(10));
+	}
+	
+
+}
+
+void program_shortcut(uint16_t cmd_val)
+{
+	switch(cmd_val)
+	{
+		case ONE:
+			// program shortcut
+		break;
+		case TWO:
+			// program shortcut
+		break;
+		case THREE:
+			// program shortcut
+		break;
+		default:
+			//etc
+		break;
+	}
+}
+
+
+bool menu_ir_receive_cb(uint16_t cmd_val, void* user_data) {
+	switch(clock_state)
+	{
+		case IDLE:
+			switch(cmd_val)
+			{
+				case UP:
+				case DOWN:
+				case LEFT:
+				case RIGHT:
+					clock_state = NAVIGATING;
+				break;
+				case STAR:
+				case HASH:
+					clock_state = STRINGS;
+				break;
+				default:
+					program_shortcut(cmd_val);
+					break;
+			}
+			break;
+		case STRINGS:
+			switch(cmd_val)
+			{
+				case UP:
+					// string++
+				break;
+				case DOWN:
+					// string--
+				break;
+				case STAR:
+					// change string db
+				break;
+				case HASH:
+					clock_state = IDLE;
+				break;
+				default:
+					break;
+			}
+		case NAVIGATING:
+			switch(cmd_val)
 			{
 				case UP:
 				case RIGHT:
-					program_index = (program_index + 1) % NUM_PROGRAMS;
+					//program index++
 				break;
 				case DOWN:
 				case LEFT:
-					program_index = (program_index - 1 + NUM_PROGRAMS) % NUM_PROGRAMS;
+					//program index--
 				break;
 				case OKAY:
-					program_select.data = &program_index;
-					xQueueSend(global_event_queue, &program_select, portMAX_DELAY);
-					goto selected_program;
+					// select
+					clock_state = RUNNING;
 				break;
+				case STAR:
+					clock_state = IDLE;
+					break;
 				default:
-				break;
+					break;
 			}
-		display_index = programs_db[program_index];
-		update_display = true;
-		}
-
-		if(update_display)
-		{
-			display_update.data = display_index.friendly_name;
-			xQueueSend(global_event_queue, &display_update, portMAX_DELAY);
-			update_display = false;
-		}
-	selected_program:
-		command.queued = false;
-		vTaskDelay(pdMS_TO_TICKS(10));
+			break;
 	}
 }
-
-void menu_ir_receive_cb(void *event_data, void* user_data)
-{
-	if(cb_enabled && !command.queued){
-		command.value = *(uint16_t *)event_data;
-		command.queued = true;
+/**
+ * @brief This cb exists purely to increment the clock.
+ * 
+ * @param user_data 
+ * @return true 
+ * @return false 
+ */
+bool menu_1s_receive_cb(void* user_data) {
+	if(clock_state == IDLE)
+	{
+		// raise display update event with time to display
 	}
-}
-
-void menu_toggle_cb()
-{
-	cb_enabled = !cb_enabled;
 }

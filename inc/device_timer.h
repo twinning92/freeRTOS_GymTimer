@@ -1,5 +1,5 @@
-#ifndef TIMER_100MS_H
-#define TIMER_100MS_H
+#ifndef DEVICE_TIMER_H
+#define DEVICE_TIMER_H
 
 #include <driver/gptimer.h>
 #include <freertos/FreeRTOS.h>
@@ -14,7 +14,17 @@ typedef struct {
     gptimer_handle_t gptimer_handle;
 } timer_context_t;
 
-void setup_timer(timer_context_t *context);
+void setup_timer(QueueHandle_t central_queue);
+
+/**
+ * @brief 
+ * 
+ * @param timer 
+ * @param event_data 
+ * @param user_ctx used to pass the central queue to the callback
+ * @return true 
+ * @return false 
+ */
 bool gptimer_isr_callback(gptimer_handle_t timer, const gptimer_alarm_event_data_t *event_data, void *user_ctx);
 
 

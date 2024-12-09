@@ -3,7 +3,7 @@
 #include <freertos/queue.h>
 #include <esp_log.h>
 
-#include "../inc/manager.h"
+#include "../inc/device_manager.h"
 
 void app_main(void){
     xTaskCreate(master_task, "Master Processor", 2048, NULL, 1, NULL);
